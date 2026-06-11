@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>訪問看護リハビリ 料金試算ツール</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:#f5f4f0;color:#1a1a18;min-height:100vh;padding:2rem 1rem}
+h1{font-size:1.25rem;font-weight:500;margin-bottom:.25rem;color:#1a1a18}
+.subtitle{font-size:.8rem;color:#888;margin-bottom:2rem}
+.container{max-width:640px;margin:0 auto}
+.card{background:#fff;border:0.5px solid #e0ded8;border-radius:12px;padding:1.25rem;margin-bottom:14px}
+.section-title{font-size:11px;font-weight:500;color:#999;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px}
+.row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.row:last-child{margin-bottom:0}
+.row label{font-size:14px;color:#555;flex:1}
+.row select,.row input[type=number]{
+  width:150px;flex:0 0 150px;
+  font-size:13px;padding:6px 10px;
+  border:0.5px solid #ddd;border-radius:8px;
+  background:#fafaf8;color:#1a1a18;
+  outline:none;appearance:none;-webkit-appearance:none;
+  cursor:pointer;
+}
+.row select:focus,.row input[type=number]:focus{border-color:#1D9E75;box-shadow:0 0 0 2px rgba(29,158,117,.12)}
+.row input[type=number]{text-align:right;padding-right:12px}
+select-wrap{position:relative}
+.toggle-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.toggle-row:last-child{margin-bottom:0}
+.toggle-row label.tlabel{font-size:14px;color:#555;flex:1}
+.toggle{position:relative;width:36px;height:20px;flex:0 0 36px}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.slider-t{position:absolute;inset:0;background:#d8d6d0;border-radius:20px;cursor:pointer;transition:.2s}
+.slider-t:before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.toggle input:checked+.slider-t{background:#1D9E75}
+.toggle input:checked+.slider-t:before{transform:translateX(16px)}
+.divider{border:none;border-top:0.5px solid #eee;margin:14px 0}
+.result-card{background:#fff;border:0.5px solid #e0ded8;border-radius:12px;padding:1.25rem;margin-bottom:14px}
+.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.metric{background:#f7f6f2;border-radius:8px;padding:.85rem 1rem}
+.metric .lbl{font-size:11px;color:#999;margin-bottom:4px}
+.metric .val{font-size:22px;font-weight:500;color:#1a1a18}
+.metric .sub{font-size:11px;color:#aaa;margin-top:3px}
+.breakdown-item{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:0.5px solid #f0eeea}
+.breakdown-item:last-child{border-bottom:none;padding-top:10px;font-size:14px;font-weight:500}
+.breakdown-item .name{color:#888}
+.breakdown-item .amt{color:#1a1a18;font-variant-numeric:tabular-nums}
+.note{font-size:11px;color:#bbb;margin-top:10px;line-height:1.7}
+.badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:6px;background:#e6f7f1;color:#0F6E56;margin-left:6px;vertical-align:middle}
+.header-bar{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2rem}
+.logo-mark{width:36px;height:36px;background:#1D9E75;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;flex-shrink:0}
+@media(max-width:480px){
+  .metric-grid{grid-template-columns:1fr}
+  .row select,.row input[type=number]{width:130px;flex:0 0 130px}
+  h1{font-size:1.1rem}
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header-bar">
+    <div>
+      <h1>訪問看護リハビリ<br>料金試算ツール</h1>
+      <p class="subtitle">介護保険・医療保険の自己負担額を簡易計算</p>
+    </div>
+    <div class="logo-mark" aria-hidden="true">&#43;</div>
+  </div>
+
+  <div class="card">
+    <p class="section-title">基本設定</p>
+
+    <div class="row">
+      <label>保険種別</label>
+      <select id="insurance">
+        <option value="kaigo">介護保険</option>
+        <option value="iryo">医療保険</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label>地域区分</label>
+      <select id="region">
+        <option value="1.15">1級地（東京23区等）</option>
+        <option value="1.12">2級地</option>
+        <option value="1.10">3級地</option>
+        <option value="1.06">4級地</option>
+        <option value="1.054">5級地</option>
+        <option value="1.04">6級地</option>
+        <option value="1.02">7級地</option>
+        <option value="1.00" selected>その他</option>
+      </select>
+    </div>
+
+    <div class="row" id="row-level">
+      <label>要介護度 <span id="iryo-note" class="badge" style="display:none">医療保険は不要</span></label>
+      <select id="kaigo-level">
+        <option value="normal">要介護1〜5</option>
+        <option value="youshien">要支援1・2</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label>1回あたり訪問時間</label>
+      <select id="visit-time">
+        <option value="20">20分未満</option>
+        <option value="30" selected>30分未満</option>
+        <option value="60">60分未満</option>
+        <option value="90">60〜90分未満</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label>週あたり訪問回数</label>
+      <input type="number" id="weekly-visits" min="1" max="7" value="3" step="1">
+    </div>
+
+    <div class="row">
+      <label>自己負担割合</label>
+      <select id="copay">
+        <option value="0.1">1割</option>
+        <option value="0.2">2割</option>
+        <option value="0.3">3割</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="section-title">加算設定</p>
+
+    <div class="toggle-row">
+      <label class="tlabel">早朝・夜間加算（6〜8時 / 18〜22時）</label>
+      <label class="toggle"><input type="checkbox" id="add-evening"><span class="slider-t"></span></label>
+    </div>
+    <div class="toggle-row">
+      <label class="tlabel">深夜加算（22〜6時）</label>
+      <label class="toggle"><input type="checkbox" id="add-night"><span class="slider-t"></span></label>
+    </div>
+    <div class="toggle-row">
+      <label class="tlabel">長時間訪問看護加算</label>
+      <label class="toggle"><input type="checkbox" id="add-taikyo"><span class="slider-t"></span></label>
+    </div>
+    <div class="toggle-row">
+      <label class="tlabel">退院時共同指導加算（月1回）</label>
+      <label class="toggle"><input type="checkbox" id="add-taiin"><span class="slider-t"></span></label>
+    </div>
+  </div>
+
+  <div class="result-card">
+    <p class="section-title">料金試算結果</p>
+
+    <div class="metric-grid">
+      <div class="metric">
+        <p class="lbl">1回あたり自己負担</p>
+        <p class="val" id="r-once">—</p>
+        <p class="sub" id="r-once-sub"></p>
+      </div>
+      <div class="metric">
+        <p class="lbl">月額自己負担（目安）</p>
+        <p class="val" id="r-month">—</p>
+        <p class="sub" id="r-month-sub"></p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div id="breakdown"></div>
+
+    <p class="note">※ 1単位＝10円 × 地域単価で計算（月4週計算）。実際の請求は事業所・保険者により異なります。加算は代表的なもののみ掲載。2024年度報酬改定をもとにした参考値です。</p>
+  </div>
+
+</div>
+
+<script>
+const BASE = {
+  kaigo:    { 20:265, 30:394, 60:573, 90:838 },
+  iryo:     { 20:255, 30:380, 60:550, 90:810 },
+  youshien: { 20:255, 30:374, 60:545, 90:800 }
+};
+const ADD_EVENING = 210;
+const ADD_NIGHT   = 420;
+const ADD_TAIIN   = 600;
+const ADD_TAIKYO  = 300;
+
+function calc() {
+  const ins    = document.getElementById('insurance').value;
+  const region = parseFloat(document.getElementById('region').value);
+  const level  = document.getElementById('kaigo-level').value;
+  const time   = document.getElementById('visit-time').value;
+  const weekly = Math.max(1, parseInt(document.getElementById('weekly-visits').value)||1);
+  const copay  = parseFloat(document.getElementById('copay').value);
+  const ev     = document.getElementById('add-evening').checked;
+  const ni     = document.getElementById('add-night').checked;
+  const taiin  = document.getElementById('add-taiin').checked;
+  const taikyo = document.getElementById('add-taikyo').checked;
+
+  const isIryo = ins === 'iryo';
+  document.getElementById('kaigo-level').disabled = isIryo;
+  document.getElementById('row-level').style.opacity = isIryo ? '0.45' : '1';
+  document.getElementById('iryo-note').style.display = isIryo ? 'inline-block' : 'none';
+
+  const baseKey = isIryo ? 'iryo' : (level === 'youshien' ? 'youshien' : 'kaigo');
+  const base    = BASE[baseKey][time];
+  const addEv   = ev     ? ADD_EVENING : 0;
+  const addNi   = ni     ? ADD_NIGHT   : 0;
+  const addTk   = taikyo ? ADD_TAIKYO  : 0;
+  const addTn   = taiin  ? ADD_TAIIN   : 0;
+
+  const totalUnits = base + addEv + addNi + addTk;
+  const unitPrice  = 10 * region;
+  const perVisit   = Math.round(totalUnits * unitPrice * copay);
+  const monthly    = Math.round(totalUnits * unitPrice * copay * weekly * 4)
+                   + (taiin ? Math.round(addTn * unitPrice * copay) : 0);
+
+  document.getElementById('r-once').textContent    = '¥' + perVisit.toLocaleString();
+  document.getElementById('r-once-sub').textContent = totalUnits + '単位 × ' + (copay*100|0) + '割';
+  document.getElementById('r-month').textContent   = '¥' + monthly.toLocaleString();
+  document.getElementById('r-month-sub').textContent = '週' + weekly + '回 × 4週' + (taiin ? '+退院加算' : '');
+
+  let html = '';
+  html += brow('基本報酬', base, unitPrice, copay);
+  if(ev)     html += brow('早朝・夜間加算', addEv, unitPrice, copay);
+  if(ni)     html += brow('深夜加算', addNi, unitPrice, copay);
+  if(taikyo) html += brow('長時間訪問看護加算', addTk, unitPrice, copay);
+  if(taiin)  html += brow('退院時共同指導加算', addTn, unitPrice, copay, '月1回');
+  html += brow('1回合計', totalUnits, unitPrice, copay, null, true);
+  document.getElementById('breakdown').innerHTML = html;
+}
+
+function brow(name, units, up, copay, note, total) {
+  const self = Math.round(units * up * copay);
+  const noteHtml = note ? ` <span style="font-size:11px;color:#bbb">(${note})</span>` : '';
+  return `<div class="breakdown-item">
+    <span class="name">${name}${noteHtml}</span>
+    <span class="amt">${units}単位 → ¥${self.toLocaleString()}</span>
+  </div>`;
+}
+
+['insurance','region','kaigo-level','visit-time','weekly-visits','copay',
+ 'add-evening','add-night','add-taiin','add-taikyo'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('change', calc);
+  el.addEventListener('input', calc);
+});
+calc();
+</script>
+</body>
+</html>
